@@ -55,24 +55,8 @@
         }
         .draggable {
             position: absolute;
-            cursor: move;
             touch-action: none;
             z-index: 10;
-        }
-        .resizable {
-            position: absolute;
-            touch-action: none;
-            cursor: pointer;
-            z-index: 10;
-        }
-        .resize-handle {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: red;
-            cursor: nwse-resize;
-            touch-action: none;
-            z-index: 11;
         }
         #preview-container {
             position: fixed;
@@ -148,7 +132,6 @@
 
     <script>
         let currentStream = null;
-        let initialDistance = null;
 
         window.onload = function() {
             startCamera();
@@ -190,7 +173,7 @@
         function createCentralItem(src) {
             const newImage = document.createElement('img');
             newImage.src = src;
-            newImage.className = 'draggable resizable';
+            newImage.className = 'draggable';
             newImage.style.width = '100px';
             newImage.style.height = '100px';
 
@@ -202,48 +185,36 @@
             document.body.appendChild(newImage);
 
             initDraggable(newImage);
-            initResizable(newImage);
         }
 
         function initDraggable(element) {
-            let posX = 0, posY = 0, mouseX = 0, mouseY = 0;
+            let posX = 0, posY = 0, initialDistance = null;
 
-            function onMouseMove(e) {
-                posX = mouseX - e.clientX;
-                posY = mouseY - e.clientY;
-                mouseX = e.clientX;
-                mouseY = e.clientY;
+            element.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    posX = touch.clientX;
+                    posY = touch.clientY;
 
-                element.style.top = (element.offsetTop - posY) + "px";
-                element.style.left = (element.offsetLeft - posX) + "px";
-
-                checkOverlap(element);
-            }
-
-            function onMouseUp() {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-            }
-
-            element.addEventListener('mousedown', function(e) {
-                e.preventDefault();
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
+                    element.style.zIndex = 11; // Bring element to the front
+                    document.addEventListener('touchmove', onTouchMove);
+                    document.addEventListener('touchend', onTouchEnd);
+                } else if (e.touches.length === 2) {
+                    pinchToZoom(element, e);
+                }
             });
 
             function onTouchMove(e) {
                 if (e.touches.length === 1) {
                     const touch = e.touches[0];
-                    posX = mouseX - touch.clientX;
-                    posY = mouseY - touch.clientY;
-                    mouseX = touch.clientX;
-                    mouseY = touch.clientY;
+                    const dx = touch.clientX - posX;
+                    const dy = touch.clientY - posY;
 
-                    element.style.top = (element.offsetTop - posY) + "px";
-                    element.style.left = (element.offsetLeft - posX) + "px";
+                    posX = touch.clientX;
+                    posY = touch.clientY;
+
+                    element.style.left = (element.offsetLeft + dx) + 'px';
+                    element.style.top = (element.offsetTop + dy) + 'px';
 
                     checkOverlap(element);
                 }
@@ -253,52 +224,31 @@
                 document.removeEventListener('touchmove', onTouchMove);
                 document.removeEventListener('touchend', onTouchEnd);
             }
-
-            element.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                if (e.touches.length === 1) {
-                    const touch = e.touches[0];
-                    mouseX = touch.clientX;
-                    mouseY = touch.clientY;
-
-                    document.addEventListener('touchmove', onTouchMove);
-                    document.addEventListener('touchend', onTouchEnd);
-                }
-            });
         }
 
-        function initResizable(element) {
-            const handle = document.createElement('div');
-            handle.className = 'resize-handle';
-            handle.style.bottom = '0';
-            handle.style.right = '0';
-            element.appendChild(handle);
+        function pinchToZoom(element, e) {
+            e.preventDefault();
 
-            let startX, startY, startWidth, startHeight;
+            const distX = e.touches[0].clientX - e.touches[1].clientX;
+            const distY = e.touches[0].clientY - e.touches[1].clientY;
+            const distance = Math.sqrt(distX * distX + distY * distY);
 
-            function onMouseMove(e) {
-                const newWidth = startWidth + e.clientX - startX;
-                const newHeight = startHeight + e.clientY - startY;
-
-                element.style.width = newWidth + 'px';
-                element.style.height = newHeight + 'px';
+            if (!element.initialDistance) {
+                element.initialDistance = distance;
+                element.initialWidth = element.clientWidth;
+                element.initialHeight = element.clientHeight;
+            } else {
+                const scale = distance / element.initialDistance;
+                element.style.width = element.initialWidth * scale + 'px';
+                element.style.height = element.initialHeight * scale + 'px';
             }
 
-            function onMouseUp() {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
+            function onTouchEnd() {
+                element.initialDistance = null;
+                document.removeEventListener('touchend', onTouchEnd);
             }
 
-            handle.addEventListener('mousedown', function(e) {
-                e.preventDefault();
-                startX = e.clientX;
-                startY = e.clientY;
-                startWidth = parseInt(document.defaultView.getComputedStyle(element).width, 10);
-                startHeight = parseInt(document.defaultView.getComputedStyle(element).height, 10);
-
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
-            });
+            document.addEventListener('touchend', onTouchEnd);
         }
 
         function checkOverlap(element) {
@@ -327,36 +277,32 @@
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            document.querySelectorAll('.draggable').forEach(element => {
-                const img = new Image();
-                img.src = element.src;
-
-                const scaleX = canvas.width / window.innerWidth;
-                const scaleY = canvas.height / window.innerHeight;
-
-                const x = element.offsetLeft * scaleX;
-                const y = element.offsetTop * scaleY;
-                const width = element.clientWidth * scaleX;
-                const height = element.clientHeight * scaleY;
-
-                ctx.drawImage(img, x, y, width, height);
+            document.querySelectorAll('.draggable').forEach((img) => {
+                const imgWidth = img.clientWidth;
+                const imgHeight = img.clientHeight;
+                const imgX = img.offsetLeft;
+                const imgY = img.offsetTop;
+                ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
             });
 
-            const dataURL = canvas.toDataURL('image/png');
+            const dataUrl = canvas.toDataURL('image/png');
+            showPreview(dataUrl);
+        }
 
+        function showPreview(dataUrl) {
+            const previewContainer = document.getElementById('preview-container');
             const previewImage = document.getElementById('preview-image');
-            previewImage.src = dataURL;
-            document.getElementById('preview-container').style.display = 'block';
+            previewImage.src = dataUrl;
+            previewContainer.style.display = 'block';
+            previewImage.onclick = () => showFullSize(dataUrl);
+        }
 
-            previewImage.onclick = function() {
-                const fullsizeImage = document.getElementById('fullsize-image');
-                document.getElementById('fullsize-image-img').src = dataURL;
-                fullsizeImage.style.display = 'flex';
-            };
-
-            document.getElementById('fullsize-image').onclick = function() {
-                this.style.display = 'none';
-            };
+        function showFullSize(dataUrl) {
+            const fullSizeContainer = document.getElementById('fullsize-image');
+            const fullSizeImage = document.getElementById('fullsize-image-img');
+            fullSizeImage.src = dataUrl;
+            fullSizeContainer.style.display = 'flex';
+            fullSizeImage.onclick = () => fullSizeContainer.style.display = 'none';
         }
     </script>
 </body>
