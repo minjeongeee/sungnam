@@ -36,28 +36,28 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%; /* 화면 너비에 맞게 설정 */
-            height: 120px; /* 높이를 120px로 설정하여 아이템 컨테이너 영역 유지 */
-            overflow-x: auto; /* 가로 스크롤 가능하게 설정 */
-            overflow-y: hidden; /* 세로 스크롤 비활성화 */
-            white-space: nowrap; /* 아이템이 한 줄로 정렬되도록 설정 */
-            background-color: rgba(255, 255, 255, 0.5); /* 반투명 배경 설정 */
+            width: 100%;
+            height: 120px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            background-color: rgba(255, 255, 255, 0.5);
             z-index: 2;
-            padding: 10px 0; /* 컨테이너 내부 여백 추가 */
+            padding: 10px 0;
         }
         .overlay-image {
-            display: inline-block; /* 가로로 나열되도록 설정 */
-            margin: 0 10px; /* 각 이미지 사이의 간격 */
+            display: inline-block;
+            margin: 0 10px;
             cursor: pointer;
             touch-action: none;
-            height: 100px; /* 높이를 100픽셀로 고정 */
-            width: auto; /* 너비는 이미지 비율에 따라 자동 조정 */
+            height: 100px;
+            width: auto;
         }
         .draggable {
             position: absolute;
             cursor: move;
             touch-action: none;
-            z-index: 10; /* 최상단 레이어 설정 */
+            z-index: 10;
         }
         .resizable {
             position: absolute;
@@ -75,7 +75,7 @@
         #preview-container {
             position: fixed;
             bottom: 20px;
-            right: 20px; /* 오른쪽 하단에 고정 */
+            right: 20px;
             z-index: 2;
             width: 100px;
             height: 100px;
@@ -178,20 +178,25 @@
         function initItemEvents() {
             document.querySelectorAll('.overlay-image').forEach((img) => {
                 img.addEventListener('click', function(e) {
-                    createDraggableAndResizable(e.target.src, e.clientX, e.clientY);
+                    createDraggableAndResizable(e.target.src);
                 });
             });
         }
 
         // 아이템을 복사하여 드래그 및 사이즈 조절 가능하게 만드는 함수
-        function createDraggableAndResizable(src, x, y) {
+        function createDraggableAndResizable(src) {
             const newImage = document.createElement('img');
             newImage.src = src;
             newImage.className = 'draggable resizable';
-            newImage.style.left = (x - 50) + 'px'; // 아이템 중심을 클릭 위치로 조정
-            newImage.style.top = (y - 50) + 'px'; // 아이템 중심을 클릭 위치로 조정
             newImage.style.width = '100px'; // 기본 너비 설정
             newImage.style.height = '100px'; // 기본 높이 설정
+
+            // 화면 중앙에 배치
+            const x = (window.innerWidth - 100) / 2;
+            const y = (window.innerHeight - 100) / 2;
+            newImage.style.left = `${x}px`;
+            newImage.style.top = `${y}px`;
+
             document.body.appendChild(newImage);
 
             initDraggable(newImage);
