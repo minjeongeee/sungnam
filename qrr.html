@@ -49,6 +49,8 @@
             margin-bottom: 10px; /* 각 이미지 사이의 간격 */
             cursor: move;
             touch-action: none;
+            width: 100px; /* 가로 크기를 100픽셀로 고정 */
+            height: auto; /* 높이는 비율에 맞게 조정 */
         }
         #preview-container {
             position: fixed;
@@ -155,95 +157,52 @@
         // 드래그 및 핀치 줌 기능 설정 함수
         function initDraggable() {
             document.querySelectorAll('.overlay-image').forEach((img) => {
-                img.addEventListener('touchstart', function(e) {
-                    dragElement(img, e);
-                });
-
-                // 핀치 줌 기능 추가
-                img.addEventListener('touchmove', function(e) {
-                    if (e.touches.length === 2) {
-                        pinchToZoom(img, e);
-                    }
-                });
-
-                // 터치 이벤트로 이미지 복사
-                img.addEventListener('click', function(e) {
-                    duplicateImage(e.target);
+                img.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    duplicateImage(e.target, e.clientX, e.clientY); // 클릭 시 이미지 복사 및 드래그 시작
                 });
             });
         }
 
         // 이미지 복사 함수
-        function duplicateImage(image) {
+        function duplicateImage(image, startX, startY) {
             const newImage = image.cloneNode(true);
-            newImage.style.left = '10px'; // 초기 위치 설정
-            newImage.style.top = '10px';
-            document.body.appendChild(newImage);
-            newImage.addEventListener('touchstart', function(e) {
-                dragElement(newImage, e);
-            });
+            newImage.style.position = 'absolute';
+            newImage.style.left = startX + 'px'; // 초기 위치 설정
+            newImage.style.top = startY + 'px';
+            newImage.style.cursor = 'move'; // 드래그 가능 커서
 
-            // 핀치 줌 기능 추가
-            newImage.addEventListener('touchmove', function(e) {
-                if (e.touches.length === 2) {
-                    pinchToZoom(newImage, e);
-                }
+            document.body.appendChild(newImage);
+
+            newImage.addEventListener('mousedown', function(e) {
+                dragElement(newImage, e); // 복사된 이미지에 드래그 이벤트 추가
             });
         }
 
         // 드래그 기능 함수
         function dragElement(element, e) {
             e.preventDefault();
-            let touch = e.touches[0];
-            let posX = touch.clientX;
-            let posY = touch.clientY;
+            let posX = e.clientX;
+            let posY = e.clientY;
 
-            function onTouchMove(e) {
-                e.preventDefault();
-                let touchMove = e.touches[0];
-                const dx = touchMove.clientX - posX;
-                const dy = touchMove.clientY - posY;
+            function onMouseMove(e) {
+                const dx = e.clientX - posX;
+                const dy = e.clientY - posY;
 
-                posX = touchMove.clientX;
-                posY = touchMove.clientY;
+                posX = e.clientX;
+                posY = e.clientY;
 
                 element.style.left = (element.offsetLeft + dx) + 'px';
                 element.style.top = (element.offsetTop + dy) + 'px';
             }
 
-            function onTouchEnd() {
-                document.removeEventListener('touchmove', onTouchMove);
-                document.removeEventListener('touchend', onTouchEnd);
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
             }
 
-            document.addEventListener('touchmove', onTouchMove);
-            document.addEventListener('touchend', onTouchEnd);
-        }
-
-        // 핀치 줌 기능 함수
-        function pinchToZoom(element, e) {
-            e.preventDefault();
-
-            const distX = e.touches[0].clientX - e.touches[1].clientX;
-            const distY = e.touches[0].clientY - e.touches[1].clientY;
-            const distance = Math.sqrt(distX * distX + distY * distY);
-
-            if (!element.initialDistance) {
-                element.initialDistance = distance;
-                element.initialWidth = element.clientWidth;
-                element.initialHeight = element.clientHeight;
-            } else {
-                const scale = distance / element.initialDistance;
-                element.style.width = element.initialWidth * scale + 'px';
-                element.style.height = element.initialHeight * scale + 'px';
-            }
-
-            function onTouchEnd() {
-                element.initialDistance = null;
-                document.removeEventListener('touchend', onTouchEnd);
-            }
-
-            document.addEventListener('touchend', onTouchEnd);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         }
 
         // 사진 촬영 버튼 클릭 이벤트
