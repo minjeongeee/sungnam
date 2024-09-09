@@ -32,18 +32,28 @@
             border: none;
             cursor: pointer;
         }
-        .overlay-image {
-            position: absolute;
-            width: 211px;
-            height: 306px;
+        #overlay-container {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 120px; /* 오른쪽에 아이템이 표시될 공간 */
+            height: 100%;
+            overflow-y: auto; /* 스크롤 가능하게 설정 */
+            padding: 10px 5px; /* 여백 설정 */
+            box-sizing: border-box; /* 박스 크기를 컨테이너의 패딩까지 포함하여 계산 */
+            background-color: rgba(255, 255, 255, 0.5); /* 투명 배경 설정 */
             z-index: 2;
+        }
+        .overlay-image {
+            display: block; /* 세로로 나열되도록 설정 */
+            margin-bottom: 10px; /* 각 이미지 사이의 간격 */
             cursor: move;
             touch-action: none;
         }
         #preview-container {
             position: fixed;
             bottom: 20px;
-            right: 20px;
+            right: 150px; /* 오른쪽 컨테이너와 겹치지 않도록 간격 조정 */
             z-index: 2;
             width: 100px;
             height: 100px;
@@ -79,16 +89,21 @@
     <!-- 비디오 스트림을 표시할 요소 -->
     <video id="video" autoplay playsinline></video>
 
-    <!-- 아이템 오버레이 이미지 -->
-    <img id="joy" class="overlay-image" src="joy.png" alt="joy Overlay" style="top: 10px; right: 10px;">
-    <img id="sad" class="overlay-image" src="sad.png" alt="sad Overlay" style="top: 326px; right: 10px;">
-    <img id="disgust" class="overlay-image" src="disgust.png" alt="disgust Overlay" style="top: 130px; right: 10px;">
-    <img id="anger" class="overlay-image" src="anger.png" alt="anger Overlay" style="top: 190px; right: 10px;">
-    <img id="fear" class="overlay-image" src="fear.png" alt="fear Overlay" style="top: 250px; right: 10px;">
-    <img id="envy" class="overlay-image" src="envy.png" alt="envy Overlay" style="top: 310px; right: 10px;">
-    <img id="ansiety" class="overlay-image" src="ansiety.png" alt="ansiety Overlay" style="top: 370px; right: 10px;">
-    <img id="ennui" class="overlay-image" src="ennui.png" alt="ennui Overlay" style="top: 430px; right: 10px;">
-    <img id="ambarrassment" class="overlay-image" src="ambarrassment.png" alt="ambarrassment Overlay" style="top: 490px; right: 10px;">
+    <!-- 아이템 오버레이를 담는 컨테이너 -->
+    <div id="overlay-container">
+        <img id="lemon" class="overlay-image" src="lemon.png" alt="Lemon Overlay">
+        <img id="apple" class="overlay-image" src="apple.png" alt="Apple Overlay">
+        <!-- 추가된 9개의 아이템들 -->
+        <img id="item1" class="overlay-image" src="item1.png" alt="Item 1">
+        <img id="item2" class="overlay-image" src="item2.png" alt="Item 2">
+        <img id="item3" class="overlay-image" src="item3.png" alt="Item 3">
+        <img id="item4" class="overlay-image" src="item4.png" alt="Item 4">
+        <img id="item5" class="overlay-image" src="item5.png" alt="Item 5">
+        <img id="item6" class="overlay-image" src="item6.png" alt="Item 6">
+        <img id="item7" class="overlay-image" src="item7.png" alt="Item 7">
+        <img id="item8" class="overlay-image" src="item8.png" alt="Item 8">
+        <img id="item9" class="overlay-image" src="item9.png" alt="Item 9">
+    </div>
 
     <!-- 사진 촬영 버튼 -->
     <button id="capture-button"></button>
@@ -267,6 +282,7 @@
             });
         });
 
+        // 전체 화면 이미지를 클릭하여 닫기
         document.getElementById('fullsize-image').addEventListener('click', function() {
             this.style.display = 'none';
         });
