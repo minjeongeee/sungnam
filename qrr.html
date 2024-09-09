@@ -63,6 +63,7 @@
             position: absolute;
             touch-action: none;
             cursor: pointer;
+            z-index: 10;
         }
         .resize-handle {
             position: absolute;
@@ -71,6 +72,9 @@
             background: red;
             cursor: nwse-resize;
             touch-action: none;
+        }
+        .central {
+            z-index: 20; /* 최상단에 위치하도록 설정 */
         }
         #preview-container {
             position: fixed;
@@ -178,16 +182,16 @@
         function initItemEvents() {
             document.querySelectorAll('.overlay-image').forEach((img) => {
                 img.addEventListener('click', function(e) {
-                    createDraggableAndResizable(e.target.src);
+                    createCentralItem(e.target.src);
                 });
             });
         }
 
-        // 아이템을 복사하여 드래그 및 사이즈 조절 가능하게 만드는 함수
-        function createDraggableAndResizable(src) {
+        // 중앙에 아이템을 생성하는 함수
+        function createCentralItem(src) {
             const newImage = document.createElement('img');
             newImage.src = src;
-            newImage.className = 'draggable resizable';
+            newImage.className = 'draggable resizable central';
             newImage.style.width = '100px'; // 기본 너비 설정
             newImage.style.height = '100px'; // 기본 높이 설정
 
@@ -199,8 +203,8 @@
 
             document.body.appendChild(newImage);
 
-            initDraggable(newImage);
-            initResizable(newImage);
+            // 중앙에 생성된 아이템은 드래그 및 사이즈 조절 불가능
+            // 해당 아이템을 클릭하면 삭제되거나 특정 기능이 추가될 수 있음
         }
 
         // 드래그 기능 함수
