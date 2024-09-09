@@ -188,7 +188,7 @@
         }
 
         function initDraggable(element) {
-            let posX = 0, posY = 0, initialDistance = null;
+            let posX = 0, posY = 0;
 
             element.addEventListener('touchstart', function(e) {
                 if (e.touches.length === 1) {
@@ -229,26 +229,42 @@
         function pinchToZoom(element, e) {
             e.preventDefault();
 
-            const distX = e.touches[0].clientX - e.touches[1].clientX;
-            const distY = e.touches[0].clientY - e.touches[1].clientY;
-            const distance = Math.sqrt(distX * distX + distY * distY);
+            let initialDistance = null;
+            let initialWidth = element.clientWidth;
+            let initialHeight = element.clientHeight;
 
-            if (!element.initialDistance) {
-                element.initialDistance = distance;
-                element.initialWidth = element.clientWidth;
-                element.initialHeight = element.clientHeight;
+            function calculateDistance(e) {
+                const distX = e.touches[0].clientX - e.touches[1].clientX;
+                const distY = e.touches[0].clientY - e.touches[1].clientY;
+                return Math.sqrt(distX * distX + distY * distY);
+            }
+
+            if (initialDistance === null) {
+                initialDistance = calculateDistance(e);
             } else {
-                const scale = distance / element.initialDistance;
-                element.style.width = element.initialWidth * scale + 'px';
-                element.style.height = element.initialHeight * scale + 'px';
+                const currentDistance = calculateDistance(e);
+                const scale = currentDistance / initialDistance;
+                element.style.width = initialWidth * scale + 'px';
+                element.style.height = initialHeight * scale + 'px';
             }
 
-            function onTouchEnd() {
-                element.initialDistance = null;
-                document.removeEventListener('touchend', onTouchEnd);
+            function onPinchMove(e) {
+                if (e.touches.length === 2) {
+                    const currentDistance = calculateDistance(e);
+                    const scale = currentDistance / initialDistance;
+                    element.style.width = initialWidth * scale + 'px';
+                    element.style.height = initialHeight * scale + 'px';
+                }
             }
 
-            document.addEventListener('touchend', onTouchEnd);
+            function onPinchEnd() {
+                document.removeEventListener('touchmove', onPinchMove);
+                document.removeEventListener('touchend', onPinchEnd);
+                initialDistance = null;
+            }
+
+            document.addEventListener('touchmove', onPinchMove);
+            document.addEventListener('touchend', onPinchEnd);
         }
 
         function checkOverlap(element) {
