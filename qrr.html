@@ -298,16 +298,7 @@
                 const imgHeight = img.clientHeight;
                 const imgX = img.offsetLeft;
                 const imgY = img.offsetTop;
-
-                // Get the actual scale of the element
-                const scale = img.clientWidth / img.style.width.replace('px', '');
-
-                // Draw the image on the canvas with the correct scale
-                ctx.drawImage(
-                    img,
-                    imgX, imgY, imgWidth, imgHeight,
-                    imgX, imgY, imgWidth / scale, imgHeight / scale
-                );
+                ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
             });
 
             const dataUrl = canvas.toDataURL('image/png');
