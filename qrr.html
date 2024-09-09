@@ -48,10 +48,13 @@
         .overlay-image {
             display: inline-block; /* 가로로 나열되도록 설정 */
             margin: 0 10px; /* 각 이미지 사이의 간격 */
-            cursor: move;
+            cursor: pointer;
             touch-action: none;
             height: 100px; /* 높이를 100픽셀로 고정 */
             width: auto; /* 너비는 이미지 비율에 따라 자동 조정 */
+        }
+        .overlay-image.selected {
+            z-index: 1000; /* 선택된 아이템을 화면 상단으로 이동 */
         }
         #preview-container {
             position: fixed;
@@ -155,55 +158,25 @@
                 });
         }
 
-        // 드래그 및 핀치 줌 기능 설정 함수
+        // 드래그 기능 및 선택된 이미지 처리 함수
         function initDraggable() {
             document.querySelectorAll('.overlay-image').forEach((img) => {
-                img.addEventListener('mousedown', function(e) {
-                    e.preventDefault();
-                    duplicateImage(e.target, e.clientX, e.clientY); // 클릭 시 이미지 복사 및 드래그 시작
+                img.addEventListener('click', function(e) {
+                    // 모든 이미지에서 선택 상태 제거
+                    document.querySelectorAll('.overlay-image').forEach((el) => {
+                        el.classList.remove('selected');
+                    });
+                    // 클릭한 이미지 선택 상태 추가
+                    e.target.classList.add('selected');
+                    // 선택된 이미지를 화면 상단으로 이동
+                    moveToFront(e.target);
                 });
             });
         }
 
-        // 이미지 복사 함수
-        function duplicateImage(image, startX, startY) {
-            const newImage = image.cloneNode(true);
-            newImage.style.position = 'absolute';
-            newImage.style.left = startX + 'px'; // 초기 위치 설정
-            newImage.style.top = startY + 'px';
-            newImage.style.cursor = 'move'; // 드래그 가능 커서
-
-            document.body.appendChild(newImage);
-
-            newImage.addEventListener('mousedown', function(e) {
-                dragElement(newImage, e); // 복사된 이미지에 드래그 이벤트 추가
-            });
-        }
-
-        // 드래그 기능 함수
-        function dragElement(element, e) {
-            e.preventDefault();
-            let posX = e.clientX;
-            let posY = e.clientY;
-
-            function onMouseMove(e) {
-                const dx = e.clientX - posX;
-                const dy = e.clientY - posY;
-
-                posX = e.clientX;
-                posY = e.clientY;
-
-                element.style.left = (element.offsetLeft + dx) + 'px';
-                element.style.top = (element.offsetTop + dy) + 'px';
-            }
-
-            function onMouseUp() {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-            }
-
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
+        // 화면 상단으로 이동 함수
+        function moveToFront(element) {
+            element.style.zIndex = 1000; // 최상단 레이어로 이동
         }
 
         // 사진 촬영 버튼 클릭 이벤트
@@ -218,10 +191,12 @@
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             document.querySelectorAll('.overlay-image').forEach((img) => {
-                const rect = img.getBoundingClientRect();
-                const scaleX = canvas.width / window.innerWidth;
-                const scaleY = canvas.height / window.innerHeight;
-                context.drawImage(img, (rect.left * scaleX), (rect.top * scaleY), img.width * scaleX, img.height * scaleY);
+                if (img.classList.contains('selected')) {
+                    const rect = img.getBoundingClientRect();
+                    const scaleX = canvas.width / window.innerWidth;
+                    const scaleY = canvas.height / window.innerHeight;
+                    context.drawImage(img, (rect.left * scaleX), (rect.top * scaleY), img.width * scaleX, img.height * scaleY);
+                }
             });
 
             const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
