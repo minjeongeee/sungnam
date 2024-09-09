@@ -36,34 +36,33 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 120px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            white-space: nowrap;
-            background-color: rgba(255, 255, 255, 0.5);
+            width: 100%; /* 화면 너비에 맞게 설정 */
+            height: 120px; /* 높이를 120px로 설정하여 아이템 컨테이너 영역 유지 */
+            overflow-x: auto; /* 가로 스크롤 가능하게 설정 */
+            overflow-y: hidden; /* 세로 스크롤 비활성화 */
+            white-space: nowrap; /* 아이템이 한 줄로 정렬되도록 설정 */
+            background-color: rgba(255, 255, 255, 0.5); /* 반투명 배경 설정 */
             z-index: 2;
-            padding: 10px 0;
+            padding: 10px 0; /* 컨테이너 내부 여백 추가 */
         }
         .overlay-image {
-            display: inline-block;
-            margin: 0 10px;
+            display: inline-block; /* 가로로 나열되도록 설정 */
+            margin: 0 10px; /* 각 이미지 사이의 간격 */
             cursor: pointer;
             touch-action: none;
-            height: 100px;
-            width: auto;
+            height: 100px; /* 높이를 100픽셀로 고정 */
+            width: auto; /* 너비는 이미지 비율에 따라 자동 조정 */
         }
         .draggable {
             position: absolute;
             cursor: move;
             touch-action: none;
-            z-index: 3;
+            z-index: 10; /* 최상단 레이어 설정 */
         }
         .resizable {
             position: absolute;
             touch-action: none;
             cursor: pointer;
-            z-index: 3;
         }
         .resize-handle {
             position: absolute;
@@ -72,12 +71,11 @@
             background: red;
             cursor: nwse-resize;
             touch-action: none;
-            z-index: 4;
         }
         #preview-container {
             position: fixed;
             bottom: 20px;
-            right: 20px;
+            right: 20px; /* 오른쪽 하단에 고정 */
             z-index: 2;
             width: 100px;
             height: 100px;
@@ -110,8 +108,10 @@
 </head>
 <body>
 
+    <!-- 비디오 스트림을 표시할 요소 -->
     <video id="video" autoplay playsinline></video>
 
+    <!-- 아이템 오버레이를 담는 컨테이너 -->
     <div id="overlay-container">
         <img id="joy" class="overlay-image" src="joy.png" alt="joy Overlay">
         <img id="sad" class="overlay-image" src="sad.png" alt="sad Overlay">
@@ -124,16 +124,20 @@
         <img id="ambarrassment" class="overlay-image" src="ambarrassment.png" alt="ambarrassment Overlay">
     </div>
 
+    <!-- 사진 촬영 버튼 -->
     <button id="capture-button"></button>
 
+    <!-- 사진 미리보기 -->
     <div id="preview-container">
         <img id="preview-image" alt="Preview">
     </div>
 
+    <!-- 전체 화면 이미지 보기 -->
     <div id="fullsize-image">
         <img id="fullsize-image-img" alt="Full Size">
     </div>
 
+    <!-- 사진을 표시할 캔버스 -->
     <canvas id="canvas" style="display: none;"></canvas>
 
     <script>
@@ -184,8 +188,8 @@
             const newImage = document.createElement('img');
             newImage.src = src;
             newImage.className = 'draggable resizable';
-            newImage.style.left = x + 'px';
-            newImage.style.top = y + 'px';
+            newImage.style.left = (x - 50) + 'px'; // 아이템 중심을 클릭 위치로 조정
+            newImage.style.top = (y - 50) + 'px'; // 아이템 중심을 클릭 위치로 조정
             newImage.style.width = '100px'; // 기본 너비 설정
             newImage.style.height = '100px'; // 기본 높이 설정
             document.body.appendChild(newImage);
@@ -224,6 +228,8 @@
         function initResizable(element) {
             const handle = document.createElement('div');
             handle.className = 'resize-handle';
+            handle.style.bottom = '0';
+            handle.style.right = '0';
             element.appendChild(handle);
 
             let startX, startY, startWidth, startHeight;
@@ -257,22 +263,7 @@
             const context = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-
-            // 비디오를 캔버스에 그리기
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            // 모든 드래그 가능한 아이템을 캔버스에 그리기
-            document.querySelectorAll('.draggable').forEach((item) => {
-                const rect = item.getBoundingClientRect();
-                const scaleX = canvas.width / window.innerWidth;
-                const scaleY = canvas.height / window.innerHeight;
-                const x = (rect.left + window.scrollX) * scaleX;
-                const y = (rect.top + window.scrollY) * scaleY;
-                const width = item.offsetWidth * scaleX;
-                const height = item.offsetHeight * scaleY;
-
-                context.drawImage(item, x, y, width, height);
-            });
 
             const dataURL = canvas.toDataURL('image/png');
             const previewImage = document.getElementById('preview-image');
