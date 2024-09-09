@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Camera with Multiple Items</title>
+    <title>Interactive Camera with Resizable Items</title>
     <style>
         body {
             margin: 0;
@@ -53,8 +53,23 @@
             height: 100px; /* 높이를 100픽셀로 고정 */
             width: auto; /* 너비는 이미지 비율에 따라 자동 조정 */
         }
-        .overlay-image.selected {
-            z-index: 1000; /* 선택된 아이템을 화면 상단으로 이동 */
+        .draggable {
+            position: absolute;
+            cursor: move;
+            touch-action: none;
+        }
+        .resizable {
+            position: absolute;
+            touch-action: none;
+            cursor: pointer;
+        }
+        .resize-handle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: red;
+            cursor: nwse-resize;
+            touch-action: none;
         }
         #preview-container {
             position: fixed;
@@ -130,7 +145,7 @@
         // 페이지 로드 시 카메라 시작
         window.onload = function() {
             startCamera();
-            initDraggable(); // 드래그 가능 설정
+            initItemEvents(); // 아이템 클릭 이벤트 설정
         };
 
         // 카메라 시작 함수
@@ -158,25 +173,84 @@
                 });
         }
 
-        // 드래그 기능 및 선택된 이미지 처리 함수
-        function initDraggable() {
+        // 아이템 클릭 이벤트 및 복사 기능 설정
+        function initItemEvents() {
             document.querySelectorAll('.overlay-image').forEach((img) => {
                 img.addEventListener('click', function(e) {
-                    // 모든 이미지에서 선택 상태 제거
-                    document.querySelectorAll('.overlay-image').forEach((el) => {
-                        el.classList.remove('selected');
-                    });
-                    // 클릭한 이미지 선택 상태 추가
-                    e.target.classList.add('selected');
-                    // 선택된 이미지를 화면 상단으로 이동
-                    moveToFront(e.target);
+                    createDraggableAndResizable(e.target.src, e.clientX, e.clientY);
                 });
             });
         }
 
-        // 화면 상단으로 이동 함수
-        function moveToFront(element) {
-            element.style.zIndex = 1000; // 최상단 레이어로 이동
+        // 아이템을 복사하여 드래그 및 사이즈 조절 가능하게 만드는 함수
+        function createDraggableAndResizable(src, x, y) {
+            const newImage = document.createElement('img');
+            newImage.src = src;
+            newImage.className = 'draggable resizable';
+            newImage.style.left = x + 'px';
+            newImage.style.top = y + 'px';
+            newImage.style.width = '100px'; // 기본 너비 설정
+            newImage.style.height = '100px'; // 기본 높이 설정
+            document.body.appendChild(newImage);
+
+            initDraggable(newImage);
+            initResizable(newImage);
+        }
+
+        // 드래그 기능 함수
+        function initDraggable(element) {
+            let posX = 0, posY = 0, mouseX = 0, mouseY = 0;
+
+            element.onmousedown = function(e) {
+                e.preventDefault();
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+
+                document.onmousemove = function(e) {
+                    posX = mouseX - e.clientX;
+                    posY = mouseY - e.clientY;
+                    mouseX = e.clientX;
+                    mouseY = e.clientY;
+
+                    element.style.top = (element.offsetTop - posY) + "px";
+                    element.style.left = (element.offsetLeft - posX) + "px";
+                };
+
+                document.onmouseup = function() {
+                    document.onmousemove = null;
+                    document.onmouseup = null;
+                };
+            };
+        }
+
+        // 사이즈 조절 기능 함수
+        function initResizable(element) {
+            const handle = document.createElement('div');
+            handle.className = 'resize-handle';
+            element.appendChild(handle);
+
+            let startX, startY, startWidth, startHeight;
+
+            handle.onmousedown = function(e) {
+                e.preventDefault();
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = parseFloat(getComputedStyle(element, null).width.replace('px', ''));
+                startHeight = parseFloat(getComputedStyle(element, null).height.replace('px', ''));
+
+                document.onmousemove = function(e) {
+                    const newWidth = startWidth + e.clientX - startX;
+                    const newHeight = startHeight + e.clientY - startY;
+
+                    if (newWidth > 50) element.style.width = newWidth + 'px';
+                    if (newHeight > 50) element.style.height = newHeight + 'px';
+                };
+
+                document.onmouseup = function() {
+                    document.onmousemove = null;
+                    document.onmouseup = null;
+                };
+            };
         }
 
         // 사진 촬영 버튼 클릭 이벤트
@@ -184,39 +258,27 @@
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
             const context = canvas.getContext('2d');
-
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            document.querySelectorAll('.overlay-image').forEach((img) => {
-                if (img.classList.contains('selected')) {
-                    const rect = img.getBoundingClientRect();
-                    const scaleX = canvas.width / window.innerWidth;
-                    const scaleY = canvas.height / window.innerHeight;
-                    context.drawImage(img, (rect.left * scaleX), (rect.top * scaleY), img.width * scaleX, img.height * scaleY);
-                }
-            });
-
-            const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
-
-            const previewContainer = document.getElementById('preview-container');
+            const dataURL = canvas.toDataURL('image/png');
             const previewImage = document.getElementById('preview-image');
-            previewImage.src = dataUrl;
-            previewContainer.style.display = 'block';
-
-            previewImage.addEventListener('click', function() {
-                const fullsizeImage = document.getElementById('fullsize-image');
-                const fullsizeImageImg = document.getElementById('fullsize-image-img');
-                fullsizeImageImg.src = dataUrl;
-                fullsizeImage.style.display = 'flex';
-            });
+            previewImage.src = dataURL;
+            document.getElementById('preview-container').style.display = 'block';
         });
 
-        // 전체 화면 이미지를 클릭하여 닫기
-        document.getElementById('fullsize-image').addEventListener('click', function() {
-            this.style.display = 'none';
+        // 미리보기 이미지 클릭 시 전체 화면 이미지 보기
+        document.getElementById('preview-image').addEventListener('click', function() {
+            const fullsizeImage = document.getElementById('fullsize-image');
+            const fullsizeImageImg = document.getElementById('fullsize-image-img');
+            fullsizeImageImg.src = this.src;
+            fullsizeImage.style.display = 'flex';
+        });
+
+        // 전체 화면 이미지 클릭 시 닫기
+        document.getElementById('fullsize-image-img').addEventListener('click', function() {
+            document.getElementById('fullsize-image').style.display = 'none';
         });
     </script>
 </body>
