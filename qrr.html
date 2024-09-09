@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Camera with Multiple Items</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+        #capture-button {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            width: 60px;
+            height: 60px;
+            background: url('camera.png') no-repeat center center;
+            background-size: contain;
+            border: none;
+            cursor: pointer;
+        }
+        .overlay-image {
+            position: absolute;
+            width: 211px;
+            height: 306px;
+            z-index: 2;
+            cursor: move;
+            touch-action: none;
+        }
+        #preview-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2;
+            width: 100px;
+            height: 100px;
+            display: none;
+        }
+        #preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        #fullsize-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3;
+        }
+        #fullsize-image img {
+            max-width: 90%;
+            max-height: 90%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 비디오 스트림을 표시할 요소 -->
+    <video id="video" autoplay playsinline></video>
+
+    <!-- 아이템 오버레이 이미지 -->
+    <img id="joy" class="overlay-image" src="joy.png" alt="joy Overlay" style="top: 10px; right: 10px;">
+    <img id="sad" class="overlay-image" src="sad.png" alt="sad Overlay" style="top: 326px; right: 10px;">
+    <img id="disgust" class="overlay-image" src="disgust.png" alt="disgust Overlay" style="top: 130px; right: 10px;">
+    <img id="anger" class="overlay-image" src="anger.png" alt="anger Overlay" style="top: 190px; right: 10px;">
+    <img id="fear" class="overlay-image" src="fear.png" alt="fear Overlay" style="top: 250px; right: 10px;">
+    <img id="envy" class="overlay-image" src="envy.png" alt="envy Overlay" style="top: 310px; right: 10px;">
+    <img id="ansiety" class="overlay-image" src="ansiety.png" alt="ansiety Overlay" style="top: 370px; right: 10px;">
+    <img id="ennui" class="overlay-image" src="ennui.png" alt="ennui Overlay" style="top: 430px; right: 10px;">
+    <img id="ambarrassment" class="overlay-image" src="ambarrassment.png" alt="ambarrassment Overlay" style="top: 490px; right: 10px;">
+
+    <!-- 사진 촬영 버튼 -->
+    <button id="capture-button"></button>
+
+    <!-- 사진 미리보기 -->
+    <div id="preview-container">
+        <img id="preview-image" alt="Preview">
+    </div>
+
+    <!-- 전체 화면 이미지 보기 -->
+    <div id="fullsize-image">
+        <img id="fullsize-image-img" alt="Full Size">
+    </div>
+
+    <!-- 사진을 표시할 캔버스 -->
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <script>
+        let currentStream = null;
+
+        // 페이지 로드 시 카메라 시작
+        window.onload = function() {
+            startCamera();
+            initDraggable(); // 드래그 가능 설정
+        };
+
+        // 카메라 시작 함수
+        function startCamera() {
+            const constraints = {
+                video: {
+                    facingMode: "environment",
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(function(stream) {
+                    currentStream = stream;
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
+                    video.onloadedmetadata = function() {
+                        video.play();
+                    };
+                })
+                .catch(function(err) {
+                    console.error("Error: " + err);
+                    alert("Could not access the camera. Please check your permissions.");
+                });
+        }
+
+        // 드래그 및 핀치 줌 기능 설정 함수
+        function initDraggable() {
+            document.querySelectorAll('.overlay-image').forEach((img) => {
+                img.addEventListener('touchstart', function(e) {
+                    dragElement(img, e);
+                });
+
+                // 핀치 줌 기능 추가
+                img.addEventListener('touchmove', function(e) {
+                    if (e.touches.length === 2) {
+                        pinchToZoom(img, e);
+                    }
+                });
+
+                // 터치 이벤트로 이미지 복사
+                img.addEventListener('click', function(e) {
+                    duplicateImage(e.target);
+                });
+            });
+        }
+
+        // 이미지 복사 함수
+        function duplicateImage(image) {
+            const newImage = image.cloneNode(true);
+            newImage.style.left = '10px'; // 초기 위치 설정
+            newImage.style.top = '10px';
+            document.body.appendChild(newImage);
+            newImage.addEventListener('touchstart', function(e) {
+                dragElement(newImage, e);
+            });
+
+            // 핀치 줌 기능 추가
+            newImage.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2) {
+                    pinchToZoom(newImage, e);
+                }
+            });
+        }
+
+        // 드래그 기능 함수
+        function dragElement(element, e) {
+            e.preventDefault();
+            let touch = e.touches[0];
+            let posX = touch.clientX;
+            let posY = touch.clientY;
+
+            function onTouchMove(e) {
+                e.preventDefault();
+                let touchMove = e.touches[0];
+                const dx = touchMove.clientX - posX;
+                const dy = touchMove.clientY - posY;
+
+                posX = touchMove.clientX;
+                posY = touchMove.clientY;
+
+                element.style.left = (element.offsetLeft + dx) + 'px';
+                element.style.top = (element.offsetTop + dy) + 'px';
+            }
+
+            function onTouchEnd() {
+                document.removeEventListener('touchmove', onTouchMove);
+                document.removeEventListener('touchend', onTouchEnd);
+            }
+
+            document.addEventListener('touchmove', onTouchMove);
+            document.addEventListener('touchend', onTouchEnd);
+        }
+
+        // 핀치 줌 기능 함수
+        function pinchToZoom(element, e) {
+            e.preventDefault();
+
+            const distX = e.touches[0].clientX - e.touches[1].clientX;
+            const distY = e.touches[0].clientY - e.touches[1].clientY;
+            const distance = Math.sqrt(distX * distX + distY * distY);
+
+            if (!element.initialDistance) {
+                element.initialDistance = distance;
+                element.initialWidth = element.clientWidth;
+                element.initialHeight = element.clientHeight;
+            } else {
+                const scale = distance / element.initialDistance;
+                element.style.width = element.initialWidth * scale + 'px';
+                element.style.height = element.initialHeight * scale + 'px';
+            }
+
+            function onTouchEnd() {
+                element.initialDistance = null;
+                document.removeEventListener('touchend', onTouchEnd);
+            }
+
+            document.addEventListener('touchend', onTouchEnd);
+        }
+
+        // 사진 촬영 버튼 클릭 이벤트
+        document.getElementById('capture-button').addEventListener('click', function() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            document.querySelectorAll('.overlay-image').forEach((img) => {
+                const rect = img.getBoundingClientRect();
+                const scaleX = canvas.width / window.innerWidth;
+                const scaleY = canvas.height / window.innerHeight;
+                context.drawImage(img, (rect.left * scaleX), (rect.top * scaleY), img.width * scaleX, img.height * scaleY);
+            });
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 1.0);
+
+            const previewContainer = document.getElementById('preview-container');
+            const previewImage = document.getElementById('preview-image');
+            previewImage.src = dataUrl;
+            previewContainer.style.display = 'block';
+
+            previewImage.addEventListener('click', function() {
+                const fullsizeImage = document.getElementById('fullsize-image');
+                const fullsizeImageImg = document.getElementById('fullsize-image-img');
+                fullsizeImageImg.src = dataUrl;
+                fullsizeImage.style.display = 'flex';
+            });
+        });
+
+        document.getElementById('fullsize-image').addEventListener('click', function() {
+            this.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
