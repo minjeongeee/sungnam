@@ -74,9 +74,6 @@
             touch-action: none;
             z-index: 11;
         }
-        .central {
-            z-index: 20;
-        }
         #preview-container {
             position: fixed;
             bottom: 20px;
@@ -139,7 +136,6 @@
 
     <canvas id="canvas" style="display: none;"></canvas>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         let currentStream = null;
         let initialDistance = null;
@@ -184,7 +180,7 @@
         function createCentralItem(src) {
             const newImage = document.createElement('img');
             newImage.src = src;
-            newImage.className = 'draggable resizable central';
+            newImage.className = 'draggable resizable';
             newImage.style.width = '100px';
             newImage.style.height = '100px';
 
@@ -340,12 +336,33 @@
         }
 
         document.getElementById('capture-button').addEventListener('click', function() {
-            html2canvas(document.body, { allowTaint: true, useCORS: true }).then(canvas => {
-                const dataURL = canvas.toDataURL('image/png');
-                const previewImage = document.getElementById('preview-image');
-                previewImage.src = dataURL;
-                document.getElementById('preview-container').style.display = 'block';
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size to video size
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw video frame to canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Draw overlay items to canvas
+            document.querySelectorAll('.draggable').forEach((item) => {
+                const rect = item.getBoundingClientRect();
+                const scale = canvas.width / window.innerWidth;
+                const x = (rect.left + window.scrollX) * scale;
+                const y = (rect.top + window.scrollY) * scale;
+                const width = item.offsetWidth * scale;
+                const height = item.offsetHeight * scale;
+
+                ctx.drawImage(item, x, y, width, height);
             });
+
+            const dataURL = canvas.toDataURL('image/png');
+            const previewImage = document.getElementById('preview-image');
+            previewImage.src = dataURL;
+            document.getElementById('preview-container').style.display = 'block';
         });
 
         document.getElementById('preview-image').addEventListener('click', function() {
