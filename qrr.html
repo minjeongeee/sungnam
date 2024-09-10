@@ -276,49 +276,68 @@
                 elementRect.right > sphereRect.left &&
                 elementRect.top < sphereRect.bottom &&
                 elementRect.bottom > sphereRect.top) {
-                element.remove(); // Remove the element if it overlaps with the sphere
+                sphere.style.opacity = 0.5;
+            } else {
+                sphere.style.opacity = 1;
             }
         }
 
-        document.getElementById('capture-button').addEventListener('click', function() {
-            captureScreenshot();
-        });
+        document.getElementById('capture-button').addEventListener('click', captureScreenshot);
 
         function captureScreenshot() {
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
             const ctx = canvas.getContext('2d');
 
+            // 캔버스 크기를 비디오의 실제 해상도로 설정
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
+
+            // 비디오를 캔버스에 그림
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+            // 화면 비율 계산
+            const scaleX = canvas.width / window.innerWidth;
+            const scaleY = canvas.height / window.innerHeight;
+
             document.querySelectorAll('.draggable').forEach((img) => {
-                const imgWidth = img.clientWidth;
-                const imgHeight = img.clientHeight;
-                const imgX = img.offsetLeft;
-                const imgY = img.offsetTop;
+                // 화면의 실제 위치와 크기를 비디오의 실제 해상도에 맞춰 계산
+                const imgWidth = img.clientWidth * scaleX;
+                const imgHeight = img.clientHeight * scaleY;
+                const imgX = img.offsetLeft * scaleX;
+                const imgY = img.offsetTop * scaleY;
+
+                // 이미지 요소를 캔버스에 그림
                 ctx.drawImage(img, imgX, imgY, imgWidth, imgHeight);
             });
 
+            // 결과 이미지를 데이터 URL로 생성
             const dataUrl = canvas.toDataURL('image/png');
             showPreview(dataUrl);
         }
 
         function showPreview(dataUrl) {
-            const previewContainer = document.getElementById('preview-container');
             const previewImage = document.getElementById('preview-image');
+            const previewContainer = document.getElementById('preview-container');
+
             previewImage.src = dataUrl;
             previewContainer.style.display = 'block';
-            previewImage.onclick = () => showFullSize(dataUrl);
+
+            previewImage.onclick = function() {
+                showFullSizeImage(dataUrl);
+            };
         }
 
-        function showFullSize(dataUrl) {
+        function showFullSizeImage(dataUrl) {
             const fullSizeContainer = document.getElementById('fullsize-image');
             const fullSizeImage = document.getElementById('fullsize-image-img');
+
             fullSizeImage.src = dataUrl;
             fullSizeContainer.style.display = 'flex';
-            fullSizeImage.onclick = () => fullSizeContainer.style.display = 'none';
+
+            fullSizeImage.onclick = function() {
+                fullSizeContainer.style.display = 'none';
+            };
         }
     </script>
 </body>
